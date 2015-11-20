@@ -55,3 +55,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Pycharm
+.idea
+
+# ogr App specific
+examples
+source
+results
+
