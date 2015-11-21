@@ -1,10 +1,8 @@
 
 
 class Lookup:
-
-
-    old_mapping = []
-    old_raw_data = []
+    old_mapping = {}
+    old_raw_data = {}
 
     def __init__(self):
         self.i_var = "bob"

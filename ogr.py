@@ -1,6 +1,5 @@
 import pprint
 
-import csvkit
 import fiona
 
 from excel import *
@@ -14,40 +13,38 @@ print("Sinar Project OGR Attribute Tables Processing!!!")
 # s = fiona.open("./source/Kedah/02_Kdh_13_Ori.shp")
 
 # Simplest .. Perak
-s = fiona.open("./source/Perak/P070_N42_Kampar_ML.shp")
+# s = fiona.open("./source/Perak/P070_N42_Kampar_ML.shp")
 
 # Structure as per below:
 # id:
 # type:
 # geometry: << The Polygon details are here; and needs to be moved >>
 # properties: << Attributes are here >>
-Lookup.old_raw_data = s
+# Lookup.old_raw_data = s
 
 # Print out everything ..
 # pprint.pprint(list(Lookup.old_raw_data[1:2]))
 
 # Schema
-pprint.pprint(s.schema)
+# pprint.pprint(s.schema)
 
 # Load up the look up index
 # First item
-one_item = Lookup.old_raw_data[0:1]
+# one_item = Lookup.old_raw_data[0:1]
 
-pprint.pprint(one_item[0]['properties'])
+# pprint.pprint(one_item[0]['properties'])
 
 # First, build up the mapping
 with fiona.open("./source/Perak/P070_N42_Kampar_ML.shp") as source:
-    # Copy over the schema and add own
-    sink_schema = source.schema.copy()
-    sink_schema['properties'][u'PAR_LAMA'] = 'str:80'
-    sink_schema['properties'][u'DUN_LAMA'] = 'str:15'
-    sink_schema['properties'][u'DM_LAMA'] = 'str:40'
-    pprint.pprint(sink_schema)
     #
     # Iterate through the data and get the needed properties
+    # Maps NORMALIZED DM NAME to OLD_ID
     new_map = {}
+    # Maps OLD_ID to FEATURE_DATA
+    new_feature_map = {}
+
     for f in source:
-        source_id =  f['id']
+        source_id = f['id']
         print("Source ID is " + source_id)
         pprint.pprint(f['properties']['Name'].split('/'))
         par, dun, dm  = f['properties']['Name'].split('/')
@@ -66,16 +63,52 @@ with fiona.open("./source/Perak/P070_N42_Kampar_ML.shp") as source:
             DUN_LAMA=dun,
             DM_LAMA=dm
         )
+        # Put original here after some optional modification
+        new_feature_map["DM" + dm] = new_row
         # pprint.pprint(new_row)
-    pprint.pprint(new_map)
 
+    # Will need to determine the last id; so can start using the next ID
+    # when adding items not found/matched
+    # When lookup found; copy over the details; else add new node?? what happens without geometry?
+    # new_feature_map["DMBOB"] = {
+    #    'id': 'BOB',
+    #    'type': 'Feature',
+    #    'properties': [
+    #        ("Name", 'BOB'),
+    #        ("PAR_LAMA", ''),
+    #        ("DUN_LAMA", ''),
+    #        ("DM_LAMA", '')
+    #    ]
+    # }
+    # pprint.pprint(new_map)
+    # pprint.pprint(new_feature_map['DMBOB'])
+    # Try writing into ... after setting the pre-reqs
+    # Copy over the schema and add own
+    sink_schema = source.schema.copy()
+    sink_schema['properties']['NAMA_LAMA'] = 'str:80'
+    sink_schema['properties'][u'PAR_LAMA'] = 'str:80'
+    sink_schema['properties'][u'DUN_LAMA'] = 'str:15'
+    sink_schema['properties'][u'DM_LAMA'] = 'str:40'
+    pprint.pprint(sink_schema)
+    with fiona.open(
+            './results/new-Sarawak.shp', 'w',
+            crs=source.crs,
+            driver=source.driver,
+            schema=sink_schema,
+            ) as sink:
+        for norm_dm in new_feature_map:
+            # pprint.pprint(new_feature_map[norm_dm])
+            sink.write(new_feature_map[norm_dm])
 
-# Open up csv; going through each
-with open("./source/Sarawak/Sarawak.csv", 'rb') as csv_file:
-    csv_source = csvkit.reader(csv_file)
-    # for row in csv_source:
-    #    print row[0]
-    #    print ', '.join(row)
+    # Attach to top level Lookup for next round processing
+    Lookup.old_mapping = new_map
+    Lookup.old_raw_data = new_feature_map
+
+    # Loop through looking for people from new_map??
+    # ec = ECRecommendation()
+    # ec.extractdata()
+
+    # Loop through again the current shapefile that needs to be transformed??
 
 # Normalize for lookup
 
@@ -91,8 +124,8 @@ with open("./source/Sarawak/Sarawak.csv", 'rb') as csv_file:
 
 # Bogr.abc()
 
-ModifiedShapefile.writeexcel()
-ModifiedShapefile.writeshapefile()
+# ModifiedShapefile.writeexcel()
+ModifiedShapefile.writeshapefile(new_feature_map)
 
 # Output to Excel
 
