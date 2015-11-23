@@ -4,9 +4,15 @@ class Lookup:
     old_mapping = {}
     old_raw_data = {}
 
-    def __init__(self):
-        self.i_var = "bob"
-        pass
+    def __init__(self, old_mapping, old_raw_data):
+        self.old_mapping = old_mapping
+        self.old_raw_data = old_raw_data
+
+    def get_old_mapping(self):
+        return self.old_mapping
+
+    def get_old_raw_data(self):
+        return self.old_raw_data
 
     @staticmethod
     def loadcsv():

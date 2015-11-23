@@ -1,7 +1,3 @@
-import pprint
-
-import fiona
-
 from excel import *
 from matching import Lookup
 
@@ -42,7 +38,12 @@ with fiona.open("./source/Perak/P070_N42_Kampar_ML.shp") as source:
     new_map = {}
     # Maps OLD_ID to FEATURE_DATA
     new_feature_map = {}
-
+    # Take out the first node as a template
+    template_node = source[0]
+    # Reset the geometry properties ... possible??
+    template_node['geometry']['coordinates'] = []
+    print("TEMPLATE NODE:")
+    pprint.pprint(template_node)
     for f in source:
         source_id = f['id']
         print("Source ID is " + source_id)
@@ -70,6 +71,13 @@ with fiona.open("./source/Perak/P070_N42_Kampar_ML.shp") as source:
     # Will need to determine the last id; so can start using the next ID
     # when adding items not found/matched
     # When lookup found; copy over the details; else add new node?? what happens without geometry?
+    new_feature_map["DMBOB"] = template_node.copy()
+    new_feature_map["DMBOB"]['properties'].update(
+        NAMA_LAMA='a/b/c',
+        PAR_LAMA='123',
+        DUN_LAMA='10',
+        DM_LAMA='02'
+    )
     # new_feature_map["DMBOB"] = {
     #    'id': 'BOB',
     #    'type': 'Feature',
@@ -81,24 +89,9 @@ with fiona.open("./source/Perak/P070_N42_Kampar_ML.shp") as source:
     #    ]
     # }
     # pprint.pprint(new_map)
-    # pprint.pprint(new_feature_map['DMBOB'])
-    # Try writing into ... after setting the pre-reqs
-    # Copy over the schema and add own
-    sink_schema = source.schema.copy()
-    sink_schema['properties']['NAMA_LAMA'] = 'str:80'
-    sink_schema['properties'][u'PAR_LAMA'] = 'str:80'
-    sink_schema['properties'][u'DUN_LAMA'] = 'str:15'
-    sink_schema['properties'][u'DM_LAMA'] = 'str:40'
-    pprint.pprint(sink_schema)
-    with fiona.open(
-            './results/new-Sarawak.shp', 'w',
-            crs=source.crs,
-            driver=source.driver,
-            schema=sink_schema,
-            ) as sink:
-        for norm_dm in new_feature_map:
-            # pprint.pprint(new_feature_map[norm_dm])
-            sink.write(new_feature_map[norm_dm])
+    pprint.pprint(new_feature_map['DMBOB'])
+    msf = ModifiedShapefile(source.driver, source.schema, './results/new-Kampar.shp')
+    msf.writeshapefile(new_feature_map)
 
     # Attach to top level Lookup for next round processing
     Lookup.old_mapping = new_map
@@ -119,14 +112,30 @@ with fiona.open("./source/Perak/P070_N42_Kampar_ML.shp") as source:
 
 # Output
 
-# b = Bogr()
-# b.writeshapefile()
-
-# Bogr.abc()
-
 # ModifiedShapefile.writeexcel()
-ModifiedShapefile.writeshapefile(new_feature_map)
 
 # Output to Excel
 
 # Functions below ...
+
+# Actual item starts below ...
+
+a = CurrentShapefile()
+# Need to extract thigns out
+a.extract_feature_map()
+# To duble check the mappings have been made
+a.pprint_new_map()
+# We can compare now ..
+# print("SIZE of NEWMAP: %d" % a.size_of_new_map())
+# a.find_dm_match('astana')
+# print("SIZE of NEWMAP: %d" %  a.size_of_new_map())
+
+# after we extract out the csv??
+ec = ECRecommendation()
+ec.extractdata()
+ec.find_dm_match(a)
+# a.pprint_new_feature_map()
+
+# print("<<<<<<<<<<    >>>>>>>>>")
+# csf = CurrentShapefile("./source/Kedah/02_Kdh_13_Ori.shp")
+# fmap = csf.extract_feature_map()
