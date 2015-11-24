@@ -2,6 +2,8 @@ import pprint
 
 import csvkit
 
+import copy
+
 # source-sink-excel
 # Put the ability to get outout to Excel
 import fiona
@@ -13,6 +15,8 @@ class CurrentShapefile:
     template_node = None
     shape_filename = "./source/Sarawak/16_Swk_13_Ori.shp"
     shapefile_source = None
+    shapefile_driver = None
+    shapefile_schema = None
     lookup = None
 
     def __init__(self, filename=None):
@@ -21,6 +25,9 @@ class CurrentShapefile:
         self.shapefile_source = fiona.open(self.shape_filename)
         # Print out the scehma for analysis
         pprint.pprint(self.shapefile_source.schema)
+        # Below does not seem to be needed; maybe just applied to those in with block
+        self.shapefile_driver = self.shapefile_source.driver
+        self.shapefile_schema = self.shapefile_source.schema
         # Take out the first node as a template
         self.template_node = self.shapefile_source[0]
         # Reset the geometry properties ... possible??
@@ -50,7 +57,8 @@ class CurrentShapefile:
             )
             # Normalize the DM name
             # TODO: Remove any non alphanum chars ..
-            nama_dm = f['properties']['NAMA_DM'].upper()
+
+            nama_dm = filter(unicode.isalnum, f['properties']['NAMA_DM'].upper())
             source_id = f['id']
             new_map[nama_dm] = source_id
             new_feature_map[source_id] = f
@@ -62,7 +70,7 @@ class CurrentShapefile:
 
     def find_dm_match(self, nama_dm):
         # Normalize the nama_dmused for lookup
-        lookup_key = nama_dm.upper()
+        lookup_key = filter(unicode.isalnum, nama_dm.upper())
         # If find a match; pop it out
         return self.lookup.get_old_mapping().pop(lookup_key)
 
@@ -85,6 +93,33 @@ class CurrentShapefile:
             DM_BARU=dm_code,
             PENGUNDI=population
         )
+
+    def get_new_feature_map(self):
+        return self.lookup.get_old_raw_data()
+
+    def add_row_to_new_feature_map(self, row):
+        # Add the new row with the information on hand
+        new_row = copy.deepcopy(self.template_node)
+        # Get out the data again .. abetter way to do it??
+        full_code, par_code, par_name, dun_code, dun_name, dm_code, dm_name, population = row
+        # Modifiy the node; fill in the unknowns ..
+        new_row['properties'].update(
+            NAME=full_code,
+            NAMA_DM=dm_name.upper(),
+            PAR_BARU=par_code,
+            DUN_BARU=dun_code,
+            DM_BARU=dm_code,
+            PENGUNDI=population,
+            PAR_LAMA='N/A',
+            DUN_LAMA='N/A',
+            DM_LAMA='N/A',
+            NAMA_LAMA='N/A'
+        )
+        # Append the row to existing ...
+        self.lookup.get_old_raw_data()[dm_name]=new_row
+        # DEBUG: Was not updating ['properties'] above originally!!
+        # pprint.pprint(self.lookup.get_old_raw_data()[dm_name])
+        # pprint.pprint(self.lookup.get_old_raw_data()['0'])
 
 class ModifiedShapefile:
 
@@ -174,6 +209,7 @@ class ECRecommendation:
                     # break
                 except KeyError as e:
                     print("MSG: " + e.message)
+                    current_shape_file.add_row_to_new_feature_map(row)
 
         print("Size of ECMAP at end is %d " % current_shape_file.size_of_new_map())
         current_shape_file.pprint_new_map()
