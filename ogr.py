@@ -12,6 +12,13 @@ print("Sinar Project OGR Attribute Tables Processing!!!")
 
 # Actual item starts below ...
 
+# Analyze the structure of the sample output .. use that??
+# wip = fiona.open('/Users/leow/Desktop/TINDAK_MALAYSIA/temp/srw-shape-wip.dbf')
+# pprint.pprint(wip.schema)
+# wip2 = fiona.open('/Users/leow/Desktop/TINDAK_MALAYSIA/temp/srw-shape.dbf')
+# pprint.pprint(wip2.schema)
+# exit()
+
 a = CurrentShapefile()
 # Need to extract thigns out
 a.extract_feature_map()
@@ -25,8 +32,13 @@ ec.find_dm_match(a)
 # a.pprint_new_feature_map()
 
 # Write out the new output ..
-msf = ModifiedShapefile(a.shapefile_source.driver, a.shapefile_source.schema)
-msf.writeshapefile(a.get_new_feature_map())
+msf = ModifiedShapefile(a.shapefile_source.driver, a.shapefile_schema)
+# msf.writeshapefile(a.get_new_feature_map())
+my_new_feature_map = a.get_new_feature_map()
+for k in my_new_feature_map:
+    if my_new_feature_map[k]['properties']['NAMA_DM'] == "BANGKIT":
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>")
+        pprint.pprint(my_new_feature_map[k]['properties'])
 
 # print("<<<<<<<<<<    >>>>>>>>>")
 # csf = CurrentShapefile("./source/Kedah/02_Kdh_13_Ori.shp")
