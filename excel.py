@@ -70,7 +70,11 @@ class CurrentShapefile:
 
             nama_dm = filter(unicode.isalnum, f['properties']['NAMA_DM'].upper())
             source_id = f['id']
-            new_map[nama_dm] = source_id
+            if not new_map.has_key(nama_dm):
+                # New key; or maybe the only one; create a new list
+                new_map[nama_dm] = []
+            # Append to new or existing list
+            new_map[nama_dm].append(source_id)
             new_feature_map[source_id] = f
 
         # Map the old mapping for lookup later own; use the static version ...
@@ -82,13 +86,22 @@ class CurrentShapefile:
         # Normalize the nama_dmused for lookup
         lookup_key = filter(unicode.isalnum, nama_dm.upper())
         # If find a match; pop it out
-        return self.lookup.get_old_mapping().pop(lookup_key)
+        # Pop out the oldest item; so that FIFO takes place
+        return self.lookup.get_old_mapping()[lookup_key].pop(0)
 
     def size_of_new_map(self):
         return len(self.lookup.get_old_mapping())
 
     def pprint_new_map(self):
         pprint.pprint(self.lookup.get_old_mapping())
+
+    def prune_new_map(self):
+        # Prune off the new map and
+        # see for inspiration:
+        #   http://stackoverflow.com/questions/12118695/efficient-way-to-remove-keys-with-empty-values-from-a-dict
+        unmatched_new_map = dict((k, v) for k, v in self.lookup.get_old_mapping().iteritems() if v)
+        print("Size of ECMAP at end is %d " % len(unmatched_new_map))
+        pprint.pprint(unmatched_new_map)
 
     def pprint_new_feature_map(self):
         pprint.pprint((self.lookup.get_old_raw_data()['0']))
@@ -295,6 +308,6 @@ class ECRecommendation:
                     print("MSG: " + e.message)
                     current_shape_file.add_row_to_new_feature_map(row)
 
-        print("Size of ECMAP at end is %d " % current_shape_file.size_of_new_map())
-        current_shape_file.pprint_new_map()
+        # Clean up an all matched DMs in the new_map
+        current_shape_file.prune_new_map()
 
