@@ -33,7 +33,9 @@ ec.find_dm_match(a)
 
 # Write out the new output ..
 msf = ModifiedShapefile(a.shapefile_source.driver, a.shapefile_schema)
-# msf.writeshapefile(a.get_new_feature_map())
+# Uncomment below to write to actual shapefile ..
+msf.writeshapefile(a.get_new_feature_map())
+# For review case of Sarawak to check specific case
 my_new_feature_map = a.get_new_feature_map()
 for k in my_new_feature_map:
     if my_new_feature_map[k]['properties']['NAMA_DM'] == "BANGKIT":
@@ -43,3 +45,4 @@ for k in my_new_feature_map:
 # print("<<<<<<<<<<    >>>>>>>>>")
 # csf = CurrentShapefile("./source/Kedah/02_Kdh_13_Ori.shp")
 # fmap = csf.extract_feature_map()
+
