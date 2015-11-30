@@ -45,4 +45,3 @@ for k in my_new_feature_map:
 # print("<<<<<<<<<<    >>>>>>>>>")
 # csf = CurrentShapefile("./source/Kedah/02_Kdh_13_Ori.shp")
 # fmap = csf.extract_feature_map()
-

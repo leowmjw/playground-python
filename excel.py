@@ -184,6 +184,18 @@ class ModifiedShapefile:
         print("Write to Excel")
 
     @staticmethod
+    def _keyify(x):
+        # Needs to have custom compare function; so that we get the correct order as per Int
+        # http://stackoverflow.com/questions/2548000/sorting-a-dictionary-having-keys-as-string-of-numbers-in-python
+
+        try:
+            xi = int(x)
+        except ValueError:
+            return 'S{0}'.format(x)
+        else:
+            return 'I{0:0{1}}'.format(xi, 10)
+
+    @staticmethod
     def writeshapefile(new_feature_map):
         print("Write to Shapefile!!")
         # Iterate through each row
@@ -203,7 +215,7 @@ class ModifiedShapefile:
             schema=ModifiedShapefile.sink_schema,
             )
 
-        for norm_dm in new_feature_map:
+        for norm_dm in sorted(new_feature_map, key=ModifiedShapefile._keyify):
             # pprint.pprint(new_feature_map[norm_dm])
             # If the PAR_LAMA is N/A; empty the field and write to WIP
             # To cleanse it as well?  before writing it down to the shapefile ..
