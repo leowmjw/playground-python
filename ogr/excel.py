@@ -230,6 +230,8 @@ class ModifiedShapefile:
             # pprint.pprint(new_feature_map[norm_dm]['properties'])
             try:
                 # TODO: ALWAYS write to WIP if Review Flag set
+                # TODO: Create a new Sink (Review)
+                #    sink_review.write(new_feature_map[norm_dm])
                 #   else is below normal flow ..
                 # For Base Shapefile leave out the new nodes
                 if new_feature_map[norm_dm]['properties']['PAR_LAMA']:
@@ -237,24 +239,27 @@ class ModifiedShapefile:
                 else:
                     # Fill up final_wip_map for use in issue #10; keyed to NAME
                     full_dm_name = new_feature_map[norm_dm]['properties']['NAME']
-                    # Do a deep copy as we'll be manipulating it
-                    final_wip_map[full_dm_name] = copy.deepcopy(new_feature_map[norm_dm])
                     # Cleanse node as per required in issue #6
                     new_feature_map[norm_dm]['properties'].update(
                         NAME='',
                         NAMA_DM=''
                     )
-                    # Write here for now; to be moved away down later ..
-                    sink_wip.write(new_feature_map[norm_dm])
+                    # Do a shallow copy as it is not used anywhere else later
+                    final_wip_map[full_dm_name] = new_feature_map[norm_dm]
 
             except ValueError as ve:
                 print(">>>>>>>>>" + ve.message)
                 pprint.pprint(new_feature_map[norm_dm]['properties'])
                 # exit()
 
-        # TODO: Loop through the collected WIP nodes ..
-        print("*** FINAL WIP MAP ************")
-        pprint.pprint(final_wip_map)
+        # Loop through the collected WIP nodes ..
+        # DEBUG: To see FINAL WIP MAP
+        # print("*** FINAL WIP MAP ************")
+        # pprint.pprint(final_wip_map)
+        for full_dm_name_key in sorted(final_wip_map, key=ModifiedShapefile._keyify):
+            print("NEW/Unmatched DM! ==> " + full_dm_name_key)
+            sink_wip.write(final_wip_map[full_dm_name_key])
+
         sink.close()
         sink_wip.close()
 
