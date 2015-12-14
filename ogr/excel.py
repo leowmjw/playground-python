@@ -1,15 +1,12 @@
 import pprint
-
 import csvkit
-
 import copy
-
 # source-sink-excel
 # Put the ability to get outout to Excel
 import fiona
 from fiona.crs import from_epsg
-
 from matching import Lookup
+
 
 class CurrentShapefile:
     template_node = None
@@ -57,7 +54,7 @@ class CurrentShapefile:
             #   likely will have PAR_LAMA, DUN_LAMA .. maybe DM_LAMA, PAR_BARU, DUN_BARU, PENGUNDI
             #   Case Sensitivty matters!!!!
             # pprint.pprint(f['properties']['NAME'])
-            par, dun, dm  = f['properties']['NAME'].split('/')
+            par, dun, dm = f['properties']['NAME'].split('/')
             # Update from bursting even if it already exists??  Will it be problematic??
             f['properties'].update(
                 NAMA_LAMA=f['properties']['NAME'],
@@ -153,14 +150,16 @@ class CurrentShapefile:
         #    pprint.pprint(new_row)
         #    exit()
         # Append the row to existing ...
-        self.lookup.get_old_raw_data()[dm_name]=new_row
+        self.lookup.get_old_raw_data()[dm_name] = new_row
         # DEBUG: Was not updating ['properties'] above originally!!
         # pprint.pprint(self.lookup.get_old_raw_data()[dm_name])
         # pprint.pprint(self.lookup.get_old_raw_data()['0'])
 
-class ModifiedShapefile:
 
-    shape_filename = './results/new-Sarawak'
+class ModifiedShapefile:
+    # The new filename should be derived from a naming nomenclature; from another ticket
+    # for now; hard code it ..
+    shape_filename = './results/16-Swk-New-DM'
     sink_driver = None
     sink_schema = None
 
@@ -206,15 +205,16 @@ class ModifiedShapefile:
             crs=from_epsg(3857),
             driver=ModifiedShapefile.sink_driver,
             schema=ModifiedShapefile.sink_schema,
-            )
+        )
         # Below is for WIP
         sink_wip = fiona.open(
             ModifiedShapefile.shape_filename + '-wip.shp', 'w',
             crs=from_epsg(3857),
             driver=ModifiedShapefile.sink_driver,
             schema=ModifiedShapefile.sink_schema,
-            )
+        )
 
+        final_wip_map = {}
         for norm_dm in sorted(new_feature_map, key=ModifiedShapefile._keyify):
             # pprint.pprint(new_feature_map[norm_dm])
             # If the PAR_LAMA is N/A; empty the field and write to WIP
@@ -225,20 +225,36 @@ class ModifiedShapefile:
             #    exit()
             # DEBUG: If PAR_LAMA is empty; only write to WIP
             # print("PAR_LAMA ==> " + new_feature_map[norm_dm]['properties']['PAR_LAMA'])
-            new_feature_map[norm_dm]['properties'] = ModifiedShapefile.create_new_properties_node(new_feature_map[norm_dm]['properties'])
+            new_feature_map[norm_dm]['properties'] = ModifiedShapefile.create_new_properties_node(
+                new_feature_map[norm_dm]['properties'])
             # pprint.pprint(new_feature_map[norm_dm]['properties'])
             try:
-                # ALWAYS write to WIP
-                sink_wip.write(new_feature_map[norm_dm])
-                # But for the Base leave out the new nodes
+                # TODO: ALWAYS write to WIP if Review Flag set
+                #   else is below normal flow ..
+                # For Base Shapefile leave out the new nodes
                 if new_feature_map[norm_dm]['properties']['PAR_LAMA']:
                     sink.write(new_feature_map[norm_dm])
+                else:
+                    # Fill up final_wip_map for use in issue #10; keyed to NAME
+                    full_dm_name = new_feature_map[norm_dm]['properties']['NAME']
+                    # Do a deep copy as we'll be manipulating it
+                    final_wip_map[full_dm_name] = copy.deepcopy(new_feature_map[norm_dm])
+                    # Cleanse node as per required in issue #6
+                    new_feature_map[norm_dm]['properties'].update(
+                        NAME='',
+                        NAMA_DM=''
+                    )
+                    # Write here for now; to be moved away down later ..
+                    sink_wip.write(new_feature_map[norm_dm])
 
             except ValueError as ve:
                 print(">>>>>>>>>" + ve.message)
                 pprint.pprint(new_feature_map[norm_dm]['properties'])
                 # exit()
 
+        # TODO: Loop through the collected WIP nodes ..
+        print("*** FINAL WIP MAP ************")
+        pprint.pprint(final_wip_map)
         sink.close()
         sink_wip.close()
 
@@ -270,9 +286,7 @@ class ModifiedShapefile:
         return new_properties_node
 
 
-
 class ECRecommendation:
-
     ec_feature_map = []
     csv_filename = "./source/Sarawak/Sarawak.csv"
 
@@ -322,4 +336,3 @@ class ECRecommendation:
 
         # Clean up an all matched DMs in the new_map
         current_shape_file.prune_new_map()
-
