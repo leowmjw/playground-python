@@ -235,6 +235,9 @@ class ModifiedShapefile:
                 #   else is below normal flow ..
                 # For Base Shapefile leave out the new nodes
                 if new_feature_map[norm_dm]['properties']['PAR_LAMA']:
+                    # DEBUGGING for Windows segfault on Unicode
+                    if int(new_feature_map[norm_dm]['id']) == 815:
+                        pprint.pprint(new_feature_map[norm_dm]['properties'])
                     sink.write(new_feature_map[norm_dm])
                 else:
                     # Fill up final_wip_map for use in issue #10; keyed to NAME
