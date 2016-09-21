@@ -54,20 +54,20 @@ print("Sinar Project OGR Attribute Tables Processing!!!")
 # ModifiedShapefile: ./results/Perak/06-Perak-New-DM
 
 
-a = CurrentShapefile('./source/Perak/06_Prk_13_Ori.shp')
+a = CurrentShapefile('./source/Johor/13_Jhr_13_Ori.shp')
 # Need to extract thigns out
 a.extract_feature_map()
 # To double check the mappings have been made
 # a.pprint_new_map()
 
 # after we extract out the csv??
-ec = ECRecommendation('./source/Perak/Perak.csv')
+ec = ECRecommendation('./source/Johor/Johor.csv')
 ec.extractdata()
 ec.find_dm_match(a)
 # a.pprint_new_feature_map()
 
 # Write out the new output ..
-msf = ModifiedShapefile(a.shapefile_source.driver, a.shapefile_schema, './results/Perak/06-Perak-New-DM')
+msf = ModifiedShapefile(a.shapefile_source.driver, a.shapefile_schema, './results/Johor/13-Johor-New-DM')
 # Uncomment below to write to actual shapefile ..
 msf.writeshapefile(a.get_new_feature_map())
 
