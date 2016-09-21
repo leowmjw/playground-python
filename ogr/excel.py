@@ -83,6 +83,8 @@ class CurrentShapefile:
         # Normalize the nama_dmused for lookup
         lookup_key = filter(unicode.isalnum, nama_dm.upper())
         # If find a match; pop it out
+        # DEBUG: Can have Empty Index ..
+        # pprint.pprint(self.lookup.get_old_mapping()[lookup_key])
         # Pop out the oldest item; so that FIFO takes place
         return self.lookup.get_old_mapping()[lookup_key].pop(0)
 
@@ -236,8 +238,8 @@ class ModifiedShapefile:
                 # For Base Shapefile leave out the new nodes
                 if new_feature_map[norm_dm]['properties']['PAR_LAMA']:
                     # DEBUGGING for Windows segfault on Unicode
-                    if int(new_feature_map[norm_dm]['id']) == 815:
-                        pprint.pprint(new_feature_map[norm_dm]['properties'])
+                    # if int(new_feature_map[norm_dm]['id']) == 815:
+                    #    pprint.pprint(new_feature_map[norm_dm]['properties'])
                     sink.write(new_feature_map[norm_dm])
                 else:
                     # Fill up final_wip_map for use in issue #10; keyed to NAME
@@ -339,8 +341,14 @@ class ECRecommendation:
                     current_shape_file.update_new_feature_map(matching_key, row)
                     # break
                 except KeyError as e:
-                    print("MSG: " + e.message)
+                    print("DM is " + dm_name + ": " + full_code)
+                    print("KeyError: " + e.message)
                     current_shape_file.add_row_to_new_feature_map(row)
+                except IndexError as e:
+                    print("DM is " + dm_name + ": " + full_code)
+                    print("IndexError: " + e.message)
+                    current_shape_file.add_row_to_new_feature_map(row)
+
 
         # Clean up an all matched DMs in the new_map
         current_shape_file.prune_new_map()
