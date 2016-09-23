@@ -188,7 +188,8 @@ class ModifiedShapefile:
     def _keyify(x):
         # Needs to have custom compare function; so that we get the correct order as per Int
         # http://stackoverflow.com/questions/2548000/sorting-a-dictionary-having-keys-as-string-of-numbers-in-python
-
+        # DEBUG:
+        # print("Write: " + x)
         try:
             xi = int(x)
         except ValueError:
