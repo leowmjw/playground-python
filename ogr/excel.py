@@ -44,6 +44,7 @@ class CurrentShapefile:
 
     def extract_feature_map(self):
         print("in Extract Feature Map ...")
+        full_code_map_to_id = {}
         new_map = {}
         new_feature_map = {}
         for f in self.shapefile_source:
@@ -53,11 +54,12 @@ class CurrentShapefile:
             #   min will have NAME, NAMA_DM
             #   likely will have PAR_LAMA, DUN_LAMA .. maybe DM_LAMA, PAR_BARU, DUN_BARU, PENGUNDI
             #   Case Sensitivty matters!!!!
-            # pprint.pprint(f['properties']['NAME'])
-            par, dun, dm = f['properties']['NAME'].split('/')
+            # pprint.pprint
+            full_code = f['properties']['NAME']
+            par, dun, dm = full_code.split('/')
             # Update from bursting even if it already exists??  Will it be problematic??
             f['properties'].update(
-                NAMA_LAMA=f['properties']['NAME'],
+                NAMA_LAMA=full_code,
                 PAR_LAMA=par,
                 DUN_LAMA=dun,
                 DM_LAMA=dm
@@ -67,6 +69,8 @@ class CurrentShapefile:
 
             nama_dm = filter(unicode.isalnum, f['properties']['NAMA_DM'].upper())
             source_id = f['id']
+            # Hash full code to the source ID so can look it up later for exact match
+            full_code_map_to_id[full_code] = source_id
             if not new_map.has_key(nama_dm):
                 # New key; or maybe the only one; create a new list
                 new_map[nama_dm] = []
@@ -75,18 +79,43 @@ class CurrentShapefile:
             new_feature_map[source_id] = f
 
         # Map the old mapping for lookup later own; use the static version ...
-        self.lookup = Lookup(new_map, new_feature_map)
+        self.lookup = Lookup(new_map, new_feature_map, full_code_map_to_id)
 
         return new_feature_map
 
-    def find_dm_match(self, nama_dm):
+    def find_dm_match(self, nama_dm, full_code):
         # Normalize the nama_dmused for lookup
         lookup_key = filter(unicode.isalnum, nama_dm.upper())
-        # If find a match; pop it out
-        # DEBUG: Can have Empty Index ..
+        # Extract out the possible matches; one or more ..
+        possible_dm_matches = self.lookup.get_old_mapping()[lookup_key]
+        # If more than one possibily then do a search to attempt matchingolder via full code
+        if len(possible_dm_matches) > 1:
+            print("DM: " + nama_dm + " has more than one possibilities!!")
+            try:
+                matched_old_id = self.lookup.get_full_code_map_to_id()[full_code]
+            except KeyError as e:
+                print("==== FULL CODE CHANGED!!! =====>" + e.message)
+                return possible_dm_matches.pop(0)
+
+            # print("OLD_ID: " + matched_old_id)
+            for i, val in enumerate(possible_dm_matches):
+                # print("IDX: " + str(i) + " VAL: " + val)
+                if val == matched_old_id:
+                    # pop it off
+                    print("Found match in index " + str(i) + " popping!")
+                    matched_old_fullcode = possible_dm_matches.pop(i)
+                    return matched_old_fullcode
+
+                    # matched_old_fullcode = filter(lambda x: x == matched_old_id, possible_dm_matches)
+                    # pprint.pprint(matched_old_fullcode)
+                    # if matched_old_fullcode:
+                    #    # DEBUG:
+                    #    print("Found match of OLD FULLCODE! " + nama_dm + " in " + full_code)
+                    #    return matched_old_fullcode.pop(0)
+
         # pprint.pprint(self.lookup.get_old_mapping()[lookup_key])
         # Pop out the oldest item; so that FIFO takes place
-        return self.lookup.get_old_mapping()[lookup_key].pop(0)
+        return possible_dm_matches.pop(0)
 
     def size_of_new_map(self):
         return len(self.lookup.get_old_mapping())
@@ -334,7 +363,7 @@ class ECRecommendation:
                 # print("DM is " + dm_name)
 
                 try:
-                    matching_key = current_shape_file.find_dm_match(dm_name)
+                    matching_key = current_shape_file.find_dm_match(dm_name, full_code)
                     # DEBUG:
                     # pprint.pprint(matching_key)
                     # Lookup and modify .. this first entry
@@ -348,7 +377,6 @@ class ECRecommendation:
                     print("DM is " + dm_name + ": " + full_code)
                     print("IndexError: " + e.message)
                     current_shape_file.add_row_to_new_feature_map(row)
-
 
         # Clean up an all matched DMs in the new_map
         current_shape_file.prune_new_map()
