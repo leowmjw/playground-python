@@ -3,16 +3,21 @@
 class Lookup:
     old_mapping = {}
     old_raw_data = {}
+    full_code_map_to_id = {}
 
-    def __init__(self, old_mapping, old_raw_data):
+    def __init__(self, old_mapping, old_raw_data, full_code_map_to_id):
         self.old_mapping = old_mapping
         self.old_raw_data = old_raw_data
+        self.full_code_map_to_id = full_code_map_to_id
 
     def get_old_mapping(self):
         return self.old_mapping
 
     def get_old_raw_data(self):
         return self.old_raw_data
+
+    def get_full_code_map_to_id(self):
+        return self.full_code_map_to_id
 
     @staticmethod
     def loadcsv():
